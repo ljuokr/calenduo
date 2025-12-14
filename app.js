@@ -4,6 +4,8 @@ const weekdayRowEl = document.getElementById("weekday-row");
 const prevBtn = document.getElementById("prev-month");
 const nextBtn = document.getElementById("next-month");
 const todayBtn = document.getElementById("today-btn");
+const syncBtn = document.getElementById("sync-btn");
+const syncStatusEl = document.getElementById("sync-status");
 const selectedDateEl = document.getElementById("selected-date");
 const eventCountEl = document.getElementById("event-count");
 const eventListEl = document.getElementById("event-list");
@@ -15,6 +17,8 @@ const timeInput = document.getElementById("time-input");
 const notesInput = document.getElementById("notes-input");
 
 const STORAGE_KEY = "calenduo-events-v1";
+const RESOURCE_ID = 8270866;
+const REMOTE_ENDPOINT = "https://chat-pearl-iota.vercel.app/api/phbern";
 const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const months = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -26,6 +30,9 @@ const state = {
   selected: startOfDay(new Date()),
   events: loadEvents()
 };
+
+let syncing = false;
+let lastSyncDate = null;
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -298,14 +305,97 @@ function addEvent(e) {
   renderAll();
 }
 
+function formatDatepicker(date) {
+  return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
+}
+
+function setSyncStatus(text, variant = "muted") {
+  if (!syncStatusEl) return;
+  syncStatusEl.textContent = text;
+  syncStatusEl.dataset.variant = variant;
+}
+
+async function syncFromRemote(targetDate = state.selected) {
+  if (syncing || !targetDate) return;
+  syncing = true;
+  setSyncStatus("Lade Live-Daten ...", "loading");
+  const dateLabel = formatDatepicker(targetDate);
+  try {
+    const url = `${REMOTE_ENDPOINT}?resource=${RESOURCE_ID}&date=${encodeURIComponent(dateLabel)}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const txt = await res.text();
+      setSyncStatus(`Fehler (${res.status}): ${txt.slice(0, 120)}`, "error");
+      syncing = false;
+      return;
+    }
+    const data = await res.json();
+    if (!data || !Array.isArray(data.events)) {
+      setSyncStatus("Antwort unbrauchbar", "error");
+      syncing = false;
+      return;
+    }
+    mergeRemoteEvents(data.events);
+    lastSyncDate = new Date();
+    const stamp = lastSyncDate.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+    setSyncStatus(`Live-Daten ${dateLabel} geladen (${data.events.length} Termine) · ${stamp}`, "success");
+    renderAll();
+  } catch (err) {
+    setSyncStatus(`Netzwerkfehler: ${err.message}`, "error");
+  } finally {
+    syncing = false;
+  }
+}
+
+function mergeRemoteEvents(events) {
+  if (!Array.isArray(events)) return;
+  const grouped = {};
+  events.forEach(ev => {
+    if (!ev || typeof ev !== "object") return;
+    const start = typeof ev.start === "number" ? ev.start * 1000 : null;
+    if (!start) return;
+    const date = new Date(start);
+    const key = toKey(date);
+    const timeLabel = new Date(start).toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+    const end = typeof ev.stop === "number" ? new Date(ev.stop * 1000) : null;
+    const endLabel = end ? end.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" }) : "";
+    const slot = endLabel ? `${timeLabel} - ${endLabel}` : timeLabel;
+    const item = {
+      id: `remote-${ev.id || `${key}-${slot}`}`,
+      title: ev.title || ev.resourceTitle || "Termin",
+      time: slot,
+      notes: `${ev.location || ""}${ev.persons ? ` · ${ev.persons}` : ""}`.trim(),
+      remote: true
+    };
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
+  });
+
+  Object.entries(grouped).forEach(([key, list]) => {
+    const existing = state.events[key] || [];
+    const localOnly = existing.filter(ev => !ev.remote);
+    const dedupedRemote = [];
+    const seen = new Set();
+    list.forEach(ev => {
+      if (seen.has(ev.id)) return;
+      seen.add(ev.id);
+      dedupedRemote.push(ev);
+    });
+    state.events[key] = [...localOnly, ...dedupedRemote].sort(compareEvents);
+  });
+  saveEvents();
+}
+
 prevBtn?.addEventListener("click", () => {
   state.monthRef = new Date(state.monthRef.getFullYear(), state.monthRef.getMonth() - 1, 1);
   renderAll();
+  syncFromRemote(state.monthRef);
 });
 
 nextBtn?.addEventListener("click", () => {
   state.monthRef = new Date(state.monthRef.getFullYear(), state.monthRef.getMonth() + 1, 1);
   renderAll();
+  syncFromRemote(state.monthRef);
 });
 
 todayBtn?.addEventListener("click", () => {
@@ -313,9 +403,12 @@ todayBtn?.addEventListener("click", () => {
   state.monthRef = startOfMonth(today);
   state.selected = startOfDay(today);
   renderAll();
+  syncFromRemote(today);
 });
 
 formEl?.addEventListener("submit", addEvent);
+syncBtn?.addEventListener("click", () => syncFromRemote(state.selected));
 
 renderWeekdays();
 renderAll();
+syncFromRemote(state.selected);

@@ -17,6 +17,9 @@
       --border: #1f2c4b;
       --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
       --radius: 16px;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --err: #f87171;
     }
     * { box-sizing: border-box; }
     body {
@@ -58,6 +61,14 @@
       font-size: 13px;
       letter-spacing: 0.02em;
     }
+    .badge.secondary {
+      background: rgba(124, 58, 237, 0.18);
+      border-color: rgba(124, 58, 237, 0.5);
+    }
+    .badge[data-variant="success"] { border-color: rgba(74, 222, 128, 0.8); color: #d8ffe5; background: rgba(74, 222, 128, 0.15); }
+    .badge[data-variant="loading"] { border-color: rgba(96, 165, 250, 0.8); color: #cfe4ff; background: rgba(96, 165, 250, 0.15); }
+    .badge[data-variant="error"] { border-color: rgba(248, 113, 113, 0.8); color: #ffe0e0; background: rgba(248, 113, 113, 0.12); }
+    .badge[data-variant="muted"] { opacity: 0.8; }
     .subtitle { color: var(--muted); margin-top: 6px; font-size: 15px; }
     .card {
       background: var(--card);
@@ -72,6 +83,12 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
+    }
+    .card-header .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
     }
     .calendar-card {
       display: grid;
@@ -233,7 +250,7 @@
       <p class="subtitle">Ein leichter Kalender mit lokalen Erinnerungen, Monatsnavigation und schneller Event-Erfassung.</p>
     </div>
     <div class="links">
-      <a href="../chat-minimal/">Zur Chat-App</a>
+      <span class="badge secondary" id="sync-status" data-variant="muted">Live-Daten nicht geladen</span>
     </div>
   </div>
 
@@ -245,7 +262,10 @@
           <div class="month-title" id="month-label">Monat</div>
           <button class="ghost" id="next-month" type="button">⟶</button>
         </div>
-        <button class="secondary" id="today-btn" type="button">Heute</button>
+        <div class="actions">
+          <button class="ghost" id="sync-btn" type="button">Live laden</button>
+          <button class="secondary" id="today-btn" type="button">Heute</button>
+        </div>
       </header>
       <div class="calendar-grid" id="weekday-row"></div>
       <div class="calendar-grid" id="calendar-grid"></div>
