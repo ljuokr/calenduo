@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calenduo · Dein leichter Kalender</title>
+  <style>
+    :root {
+      --bg: #0c1326;
+      --bg-soft: #111a30;
+      --card: #111a32;
+      --card-strong: #0b1224;
+      --accent: #60a5fa;
+      --accent-2: #7c3aed;
+      --text: #e9edf7;
+      --muted: #b6c3df;
+      --border: #1f2c4b;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(124, 58, 237, 0.18), transparent 30%),
+                  radial-gradient(circle at 80% 10%, rgba(96, 165, 250, 0.18), transparent 26%),
+                  linear-gradient(140deg, #0c1326 0%, #0a1020 60%, #0d1224 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 18px 48px;
+    }
+    h1, h2, h3 { margin: 0; font-weight: 700; }
+    p { margin: 0; color: var(--muted); }
+    a { color: var(--accent); }
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 960px) {
+      .app { grid-template-columns: 1fr; }
+    }
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .badge {
+      background: rgba(96, 165, 250, 0.15);
+      color: #cfe4ff;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(96, 165, 250, 0.5);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+    .subtitle { color: var(--muted); margin-top: 6px; font-size: 15px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .calendar-card {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 520px;
+    }
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .month-title { font-size: 22px; }
+    .ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    button {
+      cursor: pointer;
+      border-radius: 10px;
+      border: none;
+      padding: 10px 12px;
+      background: linear-gradient(135deg, var(--accent), #3b82f6);
+      color: #0a0d19;
+      font-weight: 600;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s ease;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, var(--accent-2), #6d28d9);
+      box-shadow: 0 10px 25px rgba(124, 58, 237, 0.35);
+    }
+    button.ghost {
+      background: var(--card-strong);
+      box-shadow: none;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+    .weekday {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .day {
+      position: relative;
+      border-radius: 14px;
+      padding: 12px 10px 14px;
+      background: var(--card-strong);
+      border: 1px solid var(--border);
+      min-height: 86px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.15s ease, transform 0.08s ease;
+      cursor: pointer;
+    }
+    .day:hover { border-color: rgba(96, 165, 250, 0.6); transform: translateY(-1px); }
+    .day .date {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+    }
+    .day .muted { color: #5f6b88; }
+    .pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(96, 165, 250, 0.15);
+      color: #cfe4ff;
+      border: 1px solid rgba(96, 165, 250, 0.4);
+    }
+    .today { border-color: rgba(124, 58, 237, 0.7); }
+    .selected { border-color: rgba(96, 165, 250, 0.9); box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.2); }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+    }
+    .events-badge {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    form {
+      display: grid;
+      gap: 10px;
+    }
+    input, textarea, select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-strong);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    input:focus, textarea:focus {
+      border-color: rgba(96, 165, 250, 0.8);
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    .side {
+      display: grid;
+      gap: 12px;
+    }
+    .events-list, .upcoming-list {
+      display: grid;
+      gap: 10px;
+    }
+    .event-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--card-strong);
+      display: grid;
+      gap: 4px;
+    }
+    .event-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tiny {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .empty {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px dashed var(--border);
+      text-align: center;
+      color: var(--muted);
+    }
+    .links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div>
+      <div class="badge">Neu · Offline speichernd</div>
+      <h1>Calenduo</h1>
+      <p class="subtitle">Ein leichter Kalender mit lokalen Erinnerungen, Monatsnavigation und schneller Event-Erfassung.</p>
+    </div>
+    <div class="links">
+      <a href="../chat-minimal/">Zur Chat-App</a>
+    </div>
+  </div>
+
+  <div class="app">
+    <section class="card calendar-card">
+      <header class="card-header">
+        <div class="month-nav">
+          <button class="ghost" id="prev-month" type="button">⟵</button>
+          <div class="month-title" id="month-label">Monat</div>
+          <button class="ghost" id="next-month" type="button">⟶</button>
+        </div>
+        <button class="secondary" id="today-btn" type="button">Heute</button>
+      </header>
+      <div class="calendar-grid" id="weekday-row"></div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </section>
+
+    <section class="side">
+      <div class="card">
+        <header class="card-header">
+          <div>
+            <div class="tiny">Ausgewählter Tag</div>
+            <h2 id="selected-date">–</h2>
+          </div>
+          <span class="pill" id="event-count">0 Termine</span>
+        </header>
+        <form id="event-form">
+          <input id="title-input" type="text" placeholder="Titel (z.B. Meeting)" required />
+          <input id="time-input" type="time" />
+          <textarea id="notes-input" placeholder="Notizen (optional)"></textarea>
+          <button type="submit">Termin speichern</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Termine am Tag</h3>
+        </div>
+        <div class="events-list" id="event-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Demnächst</h3>
+          <span class="tiny" id="upcoming-count">–</span>
+        </div>
+        <div class="upcoming-list" id="upcoming-list"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
